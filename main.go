@@ -8,6 +8,10 @@ import (
 	"github.com/Taviquenson/gator/internal/config"
 )
 
+type state struct {
+	cfg *config.Config
+}
+
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
@@ -25,28 +29,28 @@ func main() {
 	// 	log.Fatalf("error reading config: %v", err)
 	// }
 
-	state := config.State{
-		Cfg: &cfg,
+	programState := &state{
+		cfg: &cfg,
 	}
 	// fmt.Printf("Stored state: %v\n", state)
 
-	var cmds = config.Commands{
-		CmdsMap: make(map[string]func(*config.State, config.Command) error),
+	var cmds = commands{
+		CmdsMap: make(map[string]func(*state, command) error),
 	}
 
-	cmds.Register("login", config.HandlerLogin)
+	cmds.Register("login", handlerLogin)
 
 	args := os.Args
 	if len(args) < 2 {
 		log.Fatalf("Not enough arguments provided.")
 	}
 
-	cmd := config.Command{
+	cmd := command{
 		Name: args[1],
 		Args: args[2:],
 	}
 
-	err = cmds.Run(&state, cmd)
+	err = cmds.Run(programState, cmd)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

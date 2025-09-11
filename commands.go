@@ -1,29 +1,25 @@
-package config
+package main
 
 import (
 	"errors"
 	"fmt"
 )
 
-type State struct {
-	Cfg *Config
-}
-
-type Command struct {
+type command struct {
 	Name string
 	Args []string
 }
 
-type Commands struct {
-	CmdsMap map[string]func(*State, Command) error
+type commands struct {
+	CmdsMap map[string]func(*state, command) error
 }
 
-func HandlerLogin(s *State, cmd Command) error {
+func handlerLogin(s *state, cmd command) error {
 	if len(cmd.Args) == 0 {
 		return errors.New("the login handler expects a single argument, the username")
 	}
 	username := cmd.Args[0] // <---- DOUBLE CHECK!
-	err := s.Cfg.SetUser(username)
+	err := s.cfg.SetUser(username)
 	if err != nil {
 		return err
 	}
@@ -31,7 +27,7 @@ func HandlerLogin(s *State, cmd Command) error {
 	return nil
 }
 
-func (c *Commands) Run(s *State, cmd Command) error {
+func (c *commands) Run(s *state, cmd command) error {
 	myCmd, exists := c.CmdsMap[cmd.Name]
 	if exists {
 		err := myCmd(s, cmd)
@@ -41,6 +37,6 @@ func (c *Commands) Run(s *State, cmd Command) error {
 	}
 }
 
-func (c *Commands) Register(name string, f func(*State, Command) error) {
+func (c *commands) Register(name string, f func(*state, command) error) {
 	c.CmdsMap[name] = f
 }
