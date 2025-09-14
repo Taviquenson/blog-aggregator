@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -23,7 +22,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error reading config: %v", err)
 	}
-	fmt.Printf("Read config: %+v\n", cfg)
 
 	db, err := sql.Open("postgres", cfg.Db_url)
 	if err != nil {
@@ -43,6 +41,7 @@ func main() {
 
 	cmds.Register("login", handlerLogin)
 	cmds.Register("register", handlerRegister)
+	cmds.Register("reset", handlerReset)
 
 	args := os.Args
 	if len(args) < 2 {
@@ -58,5 +57,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Read config again: %+v\n", cfg)
 }
