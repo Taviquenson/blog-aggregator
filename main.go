@@ -9,9 +9,9 @@ import (
 	"github.com/Taviquenson/gator/internal/config"
 	"github.com/Taviquenson/gator/internal/database"
 	_ "github.com/lib/pq"
-) // not used directly in the code
-// Underscore tells Go that it's imported it for its
-// side effects, not because it will be used explicitly.
+) // Not used directly in the code, underscore
+//   tells Go that it's imported it for its side
+//   effects, not because it will be used explicitly.
 
 type state struct {
 	db  *database.Queries
@@ -25,18 +25,19 @@ func main() {
 	}
 	fmt.Printf("Read config: %+v\n", cfg)
 
-	programState := &state{
-		cfg: &cfg,
-	}
-
-	db, err := sql.Open("postgres", programState.cfg.Db_url)
+	db, err := sql.Open("postgres", cfg.Db_url)
 	if err != nil {
 		log.Fatalf("error opening connection to SQL database: %v", err)
 	}
+	defer db.Close()
 	dbQueries := database.New(db) // type: *database.Queries
-	programState.db = dbQueries
 
-	var cmds = commands{
+	programState := &state{
+		db:  dbQueries,
+		cfg: &cfg,
+	}
+
+	cmds := commands{
 		CmdsMap: make(map[string]func(*state, command) error),
 	}
 
@@ -45,7 +46,7 @@ func main() {
 
 	args := os.Args
 	if len(args) < 2 {
-		log.Fatalf("Not enough arguments provided.")
+		log.Fatal("Usage: cli <command> [args...]")
 	}
 
 	cmd := command{
@@ -55,7 +56,7 @@ func main() {
 
 	err = cmds.Run(programState, cmd)
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal(err)
 	}
 	fmt.Printf("Read config again: %+v\n", cfg)
 }
