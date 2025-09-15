@@ -22,5 +22,6 @@ func handlerAgg(s *state, _ command) error {
 	for _, item := range rssFeed.Channel.Items {
 		fmt.Printf("-Title: %s\n-Link: %s\n-Description: %s\n-Publication Date: %s\n\n", unscp(item.Title), item.Link, unscp(item.Description), item.PubDate)
 	}
+	// fmt.Printf("Feed: %+v\n", rssFeed) // Can use %+v to print a struct with its field names along with their corresponding values
 	return nil
 }
