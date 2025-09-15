@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,10 +26,15 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 
 	// Process the response
 	fmt.Printf("Response Status: %s\n", res.Status)
-	_, err = io.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return &RSSFeed{}, fmt.Errorf("error reading response body: %v", err)
 	}
 	// fmt.Printf("Response Body: %s\n", &resBody)
-	return &RSSFeed{}, nil
+	var rssFeed RSSFeed
+	if err := xml.Unmarshal(resBody, &rssFeed); err != nil {
+		return &RSSFeed{}, fmt.Errorf("error unmarshalling XML: %v", err)
+	}
+
+	return &rssFeed, nil
 }

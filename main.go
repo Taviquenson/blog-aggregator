@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"log"
 	"os"
-	"time"
 
 	"github.com/Taviquenson/gator/internal/config"
 	"github.com/Taviquenson/gator/internal/database"
@@ -45,6 +43,7 @@ func main() {
 	cmds.Register("register", handlerRegister)
 	cmds.Register("reset", handlerReset)
 	cmds.Register("users", handlerListUsers)
+	cmds.Register("agg", handlerAgg)
 
 	args := os.Args
 	if len(args) < 2 {
@@ -57,14 +56,6 @@ func main() {
 	}
 
 	err = cmds.Run(programState, cmd)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// testing RSS fetch feed
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel() // Always call cancel to release resources associated with the context
-	_, err = fetchFeed(ctx, "https://feeds.macrumors.com/MacRumors-All")
 	if err != nil {
 		log.Fatal(err)
 	}
