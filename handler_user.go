@@ -60,7 +60,7 @@ func handlerListUsers(s *state, _ command) error {
 		return fmt.Errorf("couldn't get the users from the database: %w", err)
 	}
 	for _, user := range users {
-		if user.Name == s.cfg.Current_user_name {
+		if user.Name == s.cfg.CurrentUserName {
 			fmt.Printf("* %s (current)\n", user.Name)
 			continue
 		}

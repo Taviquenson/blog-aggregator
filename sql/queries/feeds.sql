@@ -9,3 +9,10 @@ VALUES (
     $6
 )
 RETURNING *;
+
+-- name: GetFeeds :many
+SELECT * from feeds;
+
+-- name: GetFeedUser :one
+SELECT * from users
+WHERE id = $1 LIMIT 1;
