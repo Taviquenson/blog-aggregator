@@ -1,0 +1,25 @@
+The psql connection string template:
+protocol://username:password@host:port/database
+
+The psql connection string:
+"postgres://tavo:@localhost:5432/gator"
+Which can be tested/used as such:
+psql "postgres://tavo:@localhost:5432/gator"
+
+To run the postgres Up migration using cli tool goose, go into directory sql/schema and do:
+goose postgres "postgres://tavo:@localhost:5432/gator" up
+(based on this template: goose postgres <connection_string> up)
+
+You can check if the Up migration worked by running:
+psql <database_name>
+\dt
+
+Add the connection string to the .gatorconfig.json
+However, here in the config file it needs an additional sslmode=disable query string:
+protocol://username:password@host:port/database?sslmode=disable
+Your application code needs to know to not try to use SSL locally.
+
+
+--------sqlc - A cli that generates type-safe Go code from SQL queries-------
+After creating a .sql file in sql/queries for the respective table, and writing
+a new SQL query in it, call `sqlc generate` to get the go code for it.
