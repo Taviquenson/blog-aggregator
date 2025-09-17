@@ -14,14 +14,7 @@ import (
 
 const createFeed = `-- name: CreateFeed :one
 INSERT INTO feeds (id, created_at, updated_at, name, url, user_id)
-VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
-)
+VALUES ($1,$2,$3,$4,$5,$6)
 RETURNING id, created_at, updated_at, name, url, user_id
 `
 
@@ -55,25 +48,27 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 	return i, err
 }
 
-const getFeedUser = `-- name: GetFeedUser :one
-SELECT id, created_at, updated_at, name from users
-WHERE id = $1 LIMIT 1
+const getFeed = `-- name: GetFeed :one
+SELECT id, created_at, updated_at, name, url, user_id FROM feeds
+WHERE url = $1 LIMIT 1
 `
 
-func (q *Queries) GetFeedUser(ctx context.Context, id uuid.UUID) (User, error) {
-	row := q.db.QueryRowContext(ctx, getFeedUser, id)
-	var i User
+func (q *Queries) GetFeed(ctx context.Context, url string) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeed, url)
+	var i Feed
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Name,
+		&i.Url,
+		&i.UserID,
 	)
 	return i, err
 }
 
 const getFeeds = `-- name: GetFeeds :many
-SELECT id, created_at, updated_at, name, url, user_id from feeds
+SELECT id, created_at, updated_at, name, url, user_id FROM feeds
 `
 
 func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
