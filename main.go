@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
@@ -17,6 +19,9 @@ type state struct {
 	cfg *config.Config
 }
 
+var programState = &state{}
+var cmd = command{}
+
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
@@ -30,10 +35,12 @@ func main() {
 	defer db.Close()
 	dbQueries := database.New(db) // type: *database.Queries
 
-	programState := &state{
-		db:  dbQueries,
-		cfg: &cfg,
-	}
+	// programState := &state{
+	// 	db:  dbQueries,
+	// 	cfg: &cfg,
+	// }
+	programState.db = dbQueries
+	programState.cfg = &cfg
 
 	cmds := commands{
 		CmdsMap: make(map[string]func(*state, command) error),
@@ -44,23 +51,38 @@ func main() {
 	cmds.Register("reset", handlerReset)
 	cmds.Register("users", handlerListUsers)
 	cmds.Register("agg", handlerAgg)
-	cmds.Register("addfeed", handlerAddfeed)
+	cmds.Register("addfeed", middlewareLoggedIn(handlerAddfeed))
 	cmds.Register("feeds", handlerListFeeds)
-	cmds.Register("follow", handlerFollow)
-	cmds.Register("following", handlerListFeedFollows)
+	cmds.Register("follow", middlewareLoggedIn(handlerFollow))
+	cmds.Register("following", middlewareLoggedIn(handlerListFeedFollows))
 
 	args := os.Args
 	if len(args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")
 	}
 
-	cmd := command{
-		Name: args[1],
-		Args: args[2:],
-	}
+	// cmd := command{
+	// 	Name: args[1],
+	// 	Args: args[2:],
+	// }
+	cmd.Name = args[1]
+	cmd.Args = args[2:]
 
 	err = cmds.Run(programState, cmd)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+// Takes a handler of the "logged in" type and returns a "normal" handler that can be registered
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(s *state, cmd command) error {
+	return func(s *state, cmd command) error {
+		username := programState.cfg.CurrentUserName
+		user, err := programState.db.GetUser(context.Background(), username)
+		if err != nil {
+			return fmt.Errorf("no user logged in for function that requires one: %w", err)
+		}
+		handler(s, cmd, user)
+		return nil
 	}
 }

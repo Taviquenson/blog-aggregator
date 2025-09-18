@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("usage: %v <url>", cmd.Name)
 	}
@@ -18,11 +18,7 @@ func handlerFollow(s *state, cmd command) error {
 	if err != nil {
 		return fmt.Errorf("couldn't find feed: %w", err)
 	}
-	username := s.cfg.CurrentUserName
-	user, err := s.db.GetUser(context.Background(), username)
-	if err != nil {
-		return fmt.Errorf("couldn't find user: %w", err)
-	}
+
 	feedFollowParams := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
@@ -39,16 +35,15 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerListFeedFollows(s *state, cmd command) error {
+func handlerListFeedFollows(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) != 0 {
 		return fmt.Errorf("usage: %v", cmd.Name)
 	}
-	username := s.cfg.CurrentUserName
-	feedFollowsForUserRows, err := s.db.GetFeedFollowsForUser(context.Background(), username)
+	feedFollowsForUserRows, err := s.db.GetFeedFollowsForUser(context.Background(), user.Name)
 	if err != nil {
-		return fmt.Errorf("couldn't find feeds for user %s: %w", username, err)
+		return fmt.Errorf("couldn't find feeds for user %s: %w", user.Name, err)
 	}
-	fmt.Printf("Feeds followed by %s:\n", username)
+	fmt.Printf("Feeds followed by %s:\n", user.Name)
 	for _, feedFollow := range feedFollowsForUserRows {
 		fmt.Printf("- %s\n", feedFollow.FeedName)
 	}
