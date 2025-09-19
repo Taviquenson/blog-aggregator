@@ -83,7 +83,10 @@ func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) 
 		if err != nil {
 			return fmt.Errorf("no user logged in for function that requires one: %w", err)
 		}
-		handler(s, cmd, user)
+		err = handler(s, cmd, user)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 }
