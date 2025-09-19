@@ -19,9 +19,6 @@ type state struct {
 	cfg *config.Config
 }
 
-var programState = &state{}
-var cmd = command{}
-
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
@@ -35,10 +32,10 @@ func main() {
 	defer db.Close()
 	dbQueries := database.New(db) // type: *database.Queries
 
-	// programState := &state{
-	// 	db:  dbQueries,
-	// 	cfg: &cfg,
-	// }
+	programState := &state{
+		db:  dbQueries,
+		cfg: &cfg,
+	}
 	programState.db = dbQueries
 	programState.cfg = &cfg
 
@@ -56,16 +53,17 @@ func main() {
 	cmds.Register("follow", middlewareLoggedIn(handlerFollow))
 	cmds.Register("following", middlewareLoggedIn(handlerListFeedFollows))
 	cmds.Register("unfollow", middlewareLoggedIn(handlerUnfollow))
+	cmds.Register("browse", middlewareLoggedIn(handlerBrowse))
 
 	args := os.Args
 	if len(args) < 2 {
 		log.Fatal("Usage: cli <command> [args...]")
 	}
 
-	// cmd := command{
-	// 	Name: args[1],
-	// 	Args: args[2:],
-	// }
+	cmd := command{
+		Name: args[1],
+		Args: args[2:],
+	}
 	cmd.Name = args[1]
 	cmd.Args = args[2:]
 
@@ -78,8 +76,8 @@ func main() {
 // Takes a handler of the "logged in" type and returns a "normal" handler that can be registered
 func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(s *state, cmd command) error {
 	return func(s *state, cmd command) error {
-		username := programState.cfg.CurrentUserName
-		user, err := programState.db.GetUser(context.Background(), username)
+		username := s.cfg.CurrentUserName
+		user, err := s.db.GetUser(context.Background(), username)
 		if err != nil {
 			return fmt.Errorf("no user logged in for function that requires one: %w", err)
 		}

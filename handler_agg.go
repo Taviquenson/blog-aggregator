@@ -5,26 +5,18 @@ import (
 	"fmt"
 	"html"
 	"time"
+
+	"github.com/Taviquenson/gator/internal/database"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 func handlerAgg(s *state, cmd command) error {
 	if len(cmd.Args) != 1 {
-		return fmt.Errorf("usage: %v <time_between_reqs>\nValid time units are 's', 'm', 'h'", cmd.Name)
+		return fmt.Errorf("usage: %v <time_between_reqs>\nExamples of valid time units are 's', 'm', 'h'", cmd.Name)
 	}
-	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// defer cancel() // Release resources associated with the context
-	// channelLink := "https://www.wagslane.dev/index.xml"
-	// rssFeed, err := fetchFeed(ctx, channelLink)
-	// if err != nil {
-	// 	log.Fatal(err) //  <------ CHANGE!!!!!!!!!!!****!!!!
-	// }
 
-	// unscp := html.UnescapeString
-	// fmt.Printf("---RSSFeed---\nChannel Title: %s\nChannel Link: %v\nChannel Description: %s\n\nChannel Items:\n", unscp(rssFeed.Channel.Title), rssFeed.Channel.Link, unscp(rssFeed.Channel.Description))
-	// for _, item := range rssFeed.Channel.Items {
-	// 	fmt.Printf("-Title: %s\n-Link: %s\n-Description: %s\n-Publication Date: %s\n\n", unscp(item.Title), item.Link, unscp(item.Description), item.PubDate)
-	// }
-	// fmt.Printf("Feed: %+v\n", rssFeed) // Can use %+v to print a struct with its field names along with their corresponding values
 	timeBetweenRequests, err := time.ParseDuration(cmd.Args[0])
 	if err != nil {
 		return fmt.Errorf("error parsing the duration of arg '%s'", cmd.Args[0])
@@ -55,9 +47,32 @@ func scrapeFeeds(s *state) error {
 		return fmt.Errorf("couldn't fetch the feed: %w", err)
 	}
 	unscp := html.UnescapeString
-	fmt.Printf("---RSSFeed: %s---\n", unscp(rssFeed.Channel.Title))
+	p := bluemonday.StrictPolicy() // removes all tags
 	for _, item := range rssFeed.Channel.Items {
-		fmt.Printf("- Post Title: %s\n", unscp(item.Title))
+		layout := "Mon, 02 Jan 2006 15:04:05 -0700"
+		parsedTime, err := time.Parse(layout, item.PubDate)
+		if err != nil {
+			fmt.Println(err)
+			return fmt.Errorf("error parsing time: %w", err)
+		}
+		postParams := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       unscp(p.Sanitize(item.Title)),
+			Url:         item.Link,
+			Description: unscp(p.Sanitize(item.Description)),
+			PublishedAt: parsedTime,
+			FeedID:      feed.ID,
+		}
+		post, err := s.db.CreatePost(context.Background(), postParams)
+		if err != nil {
+			pqError, ok := err.(*pq.Error)
+			if ok && pqError.Code == "23505" {
+				continue
+			}
+			return fmt.Errorf("error saving post %s: %w", post.Title, err)
+		}
 	}
 
 	return nil
