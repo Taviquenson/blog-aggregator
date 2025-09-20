@@ -9,12 +9,13 @@ import (
 )
 
 func handlerBrowse(s *state, cmd command, user database.User) error {
-	postsLimit, err := 2, fmt.Errorf("")
+	postsLimit := 2
 	if len(cmd.Args) == 1 {
-		postsLimit, err = strconv.Atoi(cmd.Args[0])
+		n, err := strconv.Atoi(cmd.Args[0])
 		if err != nil {
 			return fmt.Errorf("usage: %v [optional_number_of_posts]", cmd.Name)
 		}
+		postsLimit = n
 	} else if len(cmd.Args) > 1 {
 		return fmt.Errorf("usage: %v [optional_number_of_posts]", cmd.Name)
 	}
